@@ -2,7 +2,6 @@ package buffon_test
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/bmizerany/pat"
 	"github.com/bukalapak/buffon"
+	"github.com/bukalapak/ottoman/encoding/json"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -173,10 +173,10 @@ func wrapData(m map[string]string) ([]byte, error) {
 func writeData(w http.ResponseWriter, m map[string]string) {
 	b, err := wrapData(m)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(b)
 }
