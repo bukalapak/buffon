@@ -1,0 +1,8 @@
+{
+  "meta": {
+    "http_status": 400
+  },
+  "errors": [
+    { "message": "Must provide aggregate query" }
+  ]
+}

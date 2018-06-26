@@ -1,0 +1,12 @@
+{
+  "errors": [
+    {
+      "message": "We're unable to process this request",
+      "code": 80888
+    }
+  ],
+  "meta": {
+    "http_status": 422
+  }
+}
+

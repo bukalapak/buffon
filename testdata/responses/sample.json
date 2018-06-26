@@ -1,0 +1,85 @@
+{
+  "data": {
+    "u1": {
+      "id": 12345,
+      "username": "brotoseno",
+      "name": "Bambang Brotoseno",
+      "gender": "male",
+      "verified": true,
+      "joined_at": "2013-01-17T03:20:33Z"
+    },
+    "u2": {
+      "id": 12345,
+      "username": "brotoseno",
+      "name": "Abimanyu",
+      "gender": "male",
+      "verified": true,
+      "joined_at": "2013-01-17T03:20:33Z"
+    },
+    "p1": {
+      "agent": "aggregator",
+      "hello": "Hello world!",
+      "ip": "202.212.202.212"
+    },
+    "q1": {
+      "url": "/query?foo=bar"
+    }
+  },
+  "meta": {
+    "u1": { "http_status": 200 },
+    "u2": { "http_status": 200 },
+    "p1": { "http_status": 200 },
+    "x1": { "http_status": 404 },
+    "r1": { "http_status": 422 },
+    "t1": { "http_status": 502 },
+    "o1": { "http_status": 404 },
+    "o2": { "http_status": 404 },
+    "q1": { "http_status": 200 },
+    "c1": { "http_status": 415 },
+    "c2": { "http_status": 415 }
+  },
+  "error": {
+    "x1": [
+      {
+        "code": 10000,
+        "message": "GET /unknown: 404 Not Found"
+      }
+    ],
+    "r1": [
+      {
+        "code": 80888,
+        "message": "We're unable to process this request"
+      }
+    ],
+    "t1": [
+      {
+        "code": 10000,
+        "message": "GET /timeout: timeout of 100ms exceeded"
+      }
+    ],
+    "o1": [
+      {
+        "code": 10000,
+        "message": "GET /malicious: 404 Not Found"
+      }
+    ],
+    "o2": [
+      {
+        "code": 10000,
+        "message": "GET /private: 404 Not Found"
+      }
+    ],
+    "c1": [
+      {
+        "code": 10000,
+        "message": "GET /text: Unsupported Media Type"
+      }
+    ],
+    "c2": [
+      {
+        "code": 10000,
+        "message": "GET /xml: Unsupported Media Type"
+      }
+    ]
+  }
+}

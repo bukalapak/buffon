@@ -1,0 +1,13 @@
+{
+  "data": {
+    "id": 12345,
+    "username": "brotoseno",
+    "name": "Bambang Brotoseno",
+    "gender": "male",
+    "verified": true,
+    "joined_at": "2013-01-17T03:20:33Z"
+  },
+  "meta": {
+    "http_status": 200
+  }
+}
