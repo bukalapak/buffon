@@ -2,6 +2,7 @@ package buffon_test
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -23,37 +24,76 @@ func TestAggregator(t *testing.T) {
 	backend := httptest.NewServer(handler())
 	defer backend.Close()
 
-	rev, err := buffon.NewResolver(backend.URL)
-	assert.Nil(t, err)
+	t.Run("queries", func(t *testing.T) {
+		rev, err := buffon.NewResolver(backend.URL)
+		assert.Nil(t, err)
 
-	agg := &buffon.Aggregator{
-		Resolver: rev,
-	}
+		agg := buffon.NewAggregator(rev)
 
-	matches, err := filepath.Glob("testdata/queries/*.json")
-	assert.Nil(t, err)
+		matches, err := filepath.Glob("testdata/queries/*.json")
+		assert.Nil(t, err)
 
-	for _, match := range matches {
-		t.Run(strings.Replace(match, "testdata/", "", 1), func(t *testing.T) {
-			file, err := os.Open(match)
-			assert.Nil(t, err)
-			defer file.Close()
+		for _, match := range matches {
+			t.Run(strings.Replace(match, "testdata/queries", "", 1), func(t *testing.T) {
+				file, err := os.Open(match)
+				assert.Nil(t, err)
+				defer file.Close()
 
-			r := httptest.NewRequest("POST", "http://example.com/aggregate", file)
-			r.Header.Set("X-Real-Ip", "202.212.202.212")
-			r.Header.Set("User-Agent", "gateway")
-			r.Header.Set("User-Agent-Original", "aggregator")
+				r := httptest.NewRequest("POST", "http://example.com/aggregate", file)
+				r.Header.Set("X-Real-Ip", "202.212.202.212")
+				r.Header.Set("User-Agent", "gateway")
+				r.Header.Set("User-Agent-Original", "aggregator")
 
-			w := httptest.NewRecorder()
+				w := httptest.NewRecorder()
 
-			agg.ServeHTTP(w, r)
+				agg.ServeHTTP(w, r)
 
-			resFile := strings.Replace(match, "queries", "responses", 1)
-			expected, err := ioutil.ReadFile(resFile)
-			assert.Nil(t, err)
-			assert.JSONEq(t, string(expected), w.Body.String())
-		})
-	}
+				resFile := strings.Replace(match, "queries", "responses", 1)
+				expected, err := ioutil.ReadFile(resFile)
+				assert.Nil(t, err)
+				assert.Equal(t, http.StatusOK, w.Code)
+				assert.JSONEq(t, string(expected), w.Body.String())
+			})
+		}
+	})
+
+	t.Run("fetch-failure", func(t *testing.T) {
+		rev, err := buffon.NewResolver(backend.URL)
+		assert.Nil(t, err)
+
+		rev.Transport = &FailureTransport{}
+
+		agg := buffon.NewAggregator(rev)
+
+		s := strings.NewReader(`{"aggregate":{"x1":{"path":"/foo"}}}`)
+		r := httptest.NewRequest("POST", "http://example.com/aggregate", s)
+		w := httptest.NewRecorder()
+
+		agg.ServeHTTP(w, r)
+
+		n := json.NewNode(w.Body)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, `/foo: Connection failure`, n.Get("error").Get("x1").GetN(0).Get("message").String())
+	})
+
+	t.Run("fetch-failure-response-body", func(t *testing.T) {
+		rev, err := buffon.NewResolver(backend.URL)
+		assert.Nil(t, err)
+
+		rev.Transport = &FailureBodyTransport{}
+
+		agg := buffon.NewAggregator(rev)
+
+		s := strings.NewReader(`{"aggregate":{"x1":{"path":"/foo"}}}`)
+		r := httptest.NewRequest("POST", "http://example.com/aggregate", s)
+		w := httptest.NewRecorder()
+
+		agg.ServeHTTP(w, r)
+
+		n := json.NewNode(w.Body)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, `/foo: Unable to read response body`, n.Get("error").Get("x1").GetN(0).Get("message").String())
+	})
 }
 
 func TestResolver(t *testing.T) {
@@ -179,4 +219,20 @@ func writeData(w http.ResponseWriter, m map[string]string) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(b)
+}
+
+type FailureTransport struct{}
+
+func (t *FailureTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	return nil, errors.New("Connection failure")
+}
+
+type FailureBodyTransport struct{}
+
+func (t *FailureBodyTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	return &http.Response{Body: ioutil.NopCloser(t)}, nil
+}
+
+func (t *FailureBodyTransport) Read(b []byte) (n int, err error) {
+	return 0, errors.New("Unable to read response body")
 }
