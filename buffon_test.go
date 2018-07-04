@@ -25,16 +25,16 @@ func TestAggregator(t *testing.T) {
 	defer backend.Close()
 
 	t.Run("queries", func(t *testing.T) {
-		rev, err := buffon.NewResolver(backend.URL)
+		exc, err := buffon.NewDefaultExecutor(backend.URL)
 		assert.Nil(t, err)
 
-		agg := buffon.NewAggregator(rev)
+		agg := buffon.NewAggregator(exc)
 
 		matches, err := filepath.Glob("testdata/queries/*.json")
 		assert.Nil(t, err)
 
 		for _, match := range matches {
-			t.Run(strings.Replace(match, "testdata/queries", "", 1), func(t *testing.T) {
+			t.Run(strings.Replace(match, "testdata/queries/", "", 1), func(t *testing.T) {
 				file, err := os.Open(match)
 				assert.Nil(t, err)
 				defer file.Close()
@@ -58,12 +58,12 @@ func TestAggregator(t *testing.T) {
 	})
 
 	t.Run("fetch-failure", func(t *testing.T) {
-		rev, err := buffon.NewResolver(backend.URL)
+		exc, err := buffon.NewDefaultExecutor(backend.URL)
 		assert.Nil(t, err)
 
-		rev.Transport = &FailureTransport{}
+		exc.(*buffon.DefaultExecutor).Transport = &FailureTransport{}
 
-		agg := buffon.NewAggregator(rev)
+		agg := buffon.NewAggregator(exc)
 
 		s := strings.NewReader(`{"aggregate":{"x1":{"path":"/foo"}}}`)
 		r := httptest.NewRequest("POST", "http://example.com/aggregate", s)
@@ -73,16 +73,16 @@ func TestAggregator(t *testing.T) {
 
 		n := json.NewNode(w.Body)
 		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Equal(t, `/foo: Connection failure`, n.Get("error").Get("x1").GetN(0).Get("message").String())
+		assert.Equal(t, `GET /foo: Connection failure`, n.Get("error").Get("x1").GetN(0).Get("message").String())
 	})
 
 	t.Run("fetch-failure-response-body", func(t *testing.T) {
-		rev, err := buffon.NewResolver(backend.URL)
+		exc, err := buffon.NewDefaultExecutor(backend.URL)
 		assert.Nil(t, err)
 
-		rev.Transport = &FailureBodyTransport{}
+		exc.(*buffon.DefaultExecutor).Transport = &FailureBodyTransport{}
 
-		agg := buffon.NewAggregator(rev)
+		agg := buffon.NewAggregator(exc)
 
 		s := strings.NewReader(`{"aggregate":{"x1":{"path":"/foo"}}}`)
 		r := httptest.NewRequest("POST", "http://example.com/aggregate", s)
@@ -92,26 +92,28 @@ func TestAggregator(t *testing.T) {
 
 		n := json.NewNode(w.Body)
 		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Equal(t, `/foo: Unable to read response body`, n.Get("error").Get("x1").GetN(0).Get("message").String())
+		assert.Equal(t, `GET /foo: Unable to read response body`, n.Get("error").Get("x1").GetN(0).Get("message").String())
 	})
 }
 
-func TestResolver(t *testing.T) {
+func TestDefaultExecutor(t *testing.T) {
 	t.Run("invalid-backend", func(t *testing.T) {
-		rev, err := buffon.NewResolver("http:// invalid")
+		exc, err := buffon.NewDefaultExecutor("http:// invalid")
 		assert.NotNil(t, err)
-		assert.Nil(t, rev)
+		assert.Nil(t, exc)
 	})
 }
 
-func TestResponseError(t *testing.T) {
-	err := buffon.ResponseError{
-		ErrCode:    10000,
-		StatusCode: http.StatusNotFound,
-		Message:    "GET /unknown: 404 Not Found",
-	}
+func TestError(t *testing.T) {
+	assert.Equal(t, "error", buffon.Error{Message: "error"}.Error())
+}
 
-	assert.Equal(t, "GET /unknown: 404 Not Found", err.Error())
+func TestErrorMulti(t *testing.T) {
+	errs := make(buffon.ErrorMulti)
+	errs["foo"] = errors.New("foo")
+	errs["bar"] = errors.New("bar")
+
+	assert.ElementsMatch(t, []string{"foo", "bar"}, strings.Split(errs.Error(), ","))
 }
 
 func handler() http.Handler {
@@ -230,7 +232,7 @@ func (t *FailureTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 type FailureBodyTransport struct{}
 
 func (t *FailureBodyTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-	return &http.Response{Body: ioutil.NopCloser(t)}, nil
+	return &http.Response{Body: ioutil.NopCloser(t), Request: r}, nil
 }
 
 func (t *FailureBodyTransport) Read(b []byte) (n int, err error) {
