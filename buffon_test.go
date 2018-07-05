@@ -2,6 +2,7 @@ package buffon_test
 
 import (
 	"bytes"
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
@@ -43,6 +44,7 @@ func TestAggregator(t *testing.T) {
 				r.Header.Set("X-Real-Ip", "202.212.202.212")
 				r.Header.Set("User-Agent", "gateway")
 				r.Header.Set("User-Agent-Original", "aggregator")
+				r.Header.Set("Accept-Encoding", "gzip")
 
 				w := httptest.NewRecorder()
 
@@ -155,6 +157,15 @@ func handler() http.Handler {
 	m.Get("/xml", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/xml")
 		io.WriteString(w, `<?xml version="1.0" encoding="UTF-8"?><hello>world</hello>`)
+	}))
+
+	m.Get("/gzip", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Encoding", "gzip")
+		w.Header().Set("Content-Type", "application/json")
+
+		z := gzip.NewWriter(w)
+		z.Write([]byte(`{"data":{"hello":"gzip!"},"meta":{"http_status":200}}`))
+		z.Close()
 	}))
 
 	return m

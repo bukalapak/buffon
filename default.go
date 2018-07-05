@@ -2,7 +2,9 @@ package buffon
 
 import (
 	"bytes"
+	"compress/gzip"
 	"errors"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -76,6 +78,15 @@ type payload struct {
 	Timeout int         `json:"timeout,omitempty"`
 }
 
+func (p payload) Bytes() []byte {
+	if p.Body == nil {
+		return nil
+	}
+
+	b, _ := json.Marshal(p.Body)
+	return b
+}
+
 type defaultBuilder struct {
 	BaseURL *url.URL
 }
@@ -104,6 +115,7 @@ func (x *defaultBuilder) Build(r *http.Request) (map[string]*http.Request, error
 		req := x.cloneRequest(r, v)
 		req.URL.Scheme = x.BaseURL.Scheme
 		req.URL.Host = x.BaseURL.Host
+		req.Host = x.BaseURL.Host
 		req.Header.Set("X-Timeout", dur.String())
 
 		mr[k] = req
@@ -136,11 +148,9 @@ func (x *defaultBuilder) cloneRequest(r *http.Request, t payload) *http.Request 
 		}
 	}
 
-	if b, err := json.Marshal(t.Body); err == nil {
-		body := bytes.NewReader(b)
-		req.Body = ioutil.NopCloser(body)
-		req.ContentLength = int64(body.Len())
-	}
+	body := bytes.NewReader(t.Bytes())
+	req.Body = ioutil.NopCloser(body)
+	req.ContentLength = int64(body.Len())
 
 	return req
 }
@@ -357,12 +367,24 @@ func (x *defaultFinisher) beforeFinish(ms map[string]*http.Response) (map[string
 	es := make(ErrorMulti)
 
 	for k, res := range ms {
-		b, err := ioutil.ReadAll(res.Body)
+		var rbc io.ReadCloser
+		var err error
+
+		switch res.Header.Get("Content-Encoding") {
+		case "gzip":
+			rbc, err = gzip.NewReader(res.Body)
+		default:
+			rbc = res.Body
+		}
+
+		defer rbc.Close()
+		defer res.Body.Close()
+
+		b, err := ioutil.ReadAll(rbc)
 		if err != nil {
 			es[k] = x.buildError(res, err.Error(), res.StatusCode)
 			continue
 		}
-		defer res.Body.Close()
 
 		n := json.NewNode(bytes.NewReader(b))
 

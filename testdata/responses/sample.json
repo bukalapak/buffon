@@ -23,6 +23,9 @@
     },
     "q1": {
       "url": "/query?foo=bar"
+    },
+    "g1": {
+      "hello": "gzip!"
     }
   },
   "meta": {
@@ -36,7 +39,8 @@
     "o2": { "http_status": 404 },
     "q1": { "http_status": 200 },
     "c1": { "http_status": 415 },
-    "c2": { "http_status": 415 }
+    "c2": { "http_status": 415 },
+    "g1": { "http_status": 200 }
   },
   "error": {
     "x1": [
