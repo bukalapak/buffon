@@ -367,22 +367,11 @@ func (x *defaultFinisher) beforeFinish(ms map[string]*http.Response) (map[string
 	es := make(ErrorMulti)
 
 	for k, res := range ms {
-		var rbc io.ReadCloser
-		var err error
-
-		switch res.Header.Get("Content-Encoding") {
-		case "gzip":
-			rbc, err = gzip.NewReader(res.Body)
-		default:
-			rbc = res.Body
-		}
-
-		defer rbc.Close()
 		defer res.Body.Close()
 
-		b, err := ioutil.ReadAll(rbc)
+		b, err := x.readBody(res)
 		if err != nil {
-			es[k] = x.buildError(res, err.Error(), res.StatusCode)
+			es[k] = err
 			continue
 		}
 
@@ -407,6 +396,31 @@ func (x *defaultFinisher) beforeFinish(ms map[string]*http.Response) (map[string
 	}
 
 	return ns, es
+}
+
+func (x *defaultFinisher) readBody(res *http.Response) ([]byte, error) {
+	var rbc io.ReadCloser
+
+	switch res.Header.Get("Content-Encoding") {
+	case "gzip":
+		gz, err := gzip.NewReader(res.Body)
+		if err != nil {
+			return nil, x.buildError(res, err.Error(), http.StatusInternalServerError)
+		}
+
+		rbc = gz
+	default:
+		rbc = res.Body
+	}
+
+	defer rbc.Close()
+
+	b, err := ioutil.ReadAll(rbc)
+	if err != nil {
+		return nil, x.buildError(res, err.Error(), res.StatusCode)
+	}
+
+	return b, nil
 }
 
 func (x *defaultFinisher) hasErrorBody(n *json.Node) bool {

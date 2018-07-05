@@ -40,7 +40,8 @@
     "q1": { "http_status": 200 },
     "c1": { "http_status": 415 },
     "c2": { "http_status": 415 },
-    "g1": { "http_status": 200 }
+    "g1": { "http_status": 200 },
+    "g2": { "http_status": 500 }
   },
   "error": {
     "x1": [
@@ -83,6 +84,12 @@
       {
         "code": 10000,
         "message": "GET /xml: Unsupported Media Type"
+      }
+    ],
+    "g2": [
+      {
+        "code": 10000,
+        "message": "GET /gzip-invalid: gzip: invalid header"
       }
     ]
   }
