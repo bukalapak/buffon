@@ -6,6 +6,7 @@
     "x1": { "method": "GET", "path": "/unknown" },
     "r1": { "method": "GET", "path": "/422" },
     "t1": { "method": "GET", "path": "/timeout", "timeout": 100 },
+    "t2": { "method": "GET", "path": "/timeout-config", "timeout": 2000 },
     "o1": { "method": "GET", "path": "http://example.com/malicious" },
     "o2": { "method": "GET", "path": "http://172.88.87.86/private" },
     "q1": { "method": "GET", "path": "/query?foo=bar" },

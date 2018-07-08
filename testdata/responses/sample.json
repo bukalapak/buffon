@@ -26,6 +26,9 @@
     },
     "g1": {
       "hello": "gzip!"
+    },
+    "t2": {
+      "timeout": "1s"
     }
   },
   "meta": {
@@ -41,7 +44,8 @@
     "c1": { "http_status": 415 },
     "c2": { "http_status": 415 },
     "g1": { "http_status": 200 },
-    "g2": { "http_status": 500 }
+    "g2": { "http_status": 500 },
+    "t2": { "http_status": 200 }
   },
   "error": {
     "x1": [
