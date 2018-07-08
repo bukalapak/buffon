@@ -13,6 +13,7 @@
     "c1": { "method": "GET", "path": "/text" },
     "c2": { "method": "GET", "path": "/xml" },
     "g1": { "method": "GET", "path": "/gzip" },
-    "g2": { "method": "GET", "path": "/gzip-invalid" }
+    "g2": { "method": "GET", "path": "/gzip-invalid" },
+    "h1": { "method": "GET", "path": "/header" }
   }
 }

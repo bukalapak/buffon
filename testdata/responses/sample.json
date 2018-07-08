@@ -29,6 +29,9 @@
     },
     "t2": {
       "timeout": "1s"
+    },
+    "h1": {
+      "x-request-id": "3a772b45-c5a3-4f7f-922e-372f216056c5"
     }
   },
   "meta": {
@@ -45,7 +48,8 @@
     "c2": { "http_status": 415 },
     "g1": { "http_status": 200 },
     "g2": { "http_status": 500 },
-    "t2": { "http_status": 200 }
+    "t2": { "http_status": 200 },
+    "h1": { "http_status": 200 }
   },
   "error": {
     "x1": [

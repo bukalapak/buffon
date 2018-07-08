@@ -46,6 +46,7 @@ func TestAggregator(t *testing.T) {
 
 				r := httptest.NewRequest("POST", "http://example.com/aggregate", file)
 				r.Header.Set("X-Real-Ip", "202.212.202.212")
+				r.Header.Set("X-Request-Id", "3a772b45-c5a3-4f7f-922e-372f216056c5")
 				r.Header.Set("User-Agent", "gateway")
 				r.Header.Set("User-Agent-Original", "aggregator")
 				r.Header.Set("Accept-Encoding", "gzip")
@@ -185,6 +186,10 @@ func handler() http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 
 		io.WriteString(w, `{"data":{"hello":"gzip!"},"meta":{"http_status":200}}`)
+	}))
+
+	m.Get("/header", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		writeData(w, map[string]string{"x-request-id": r.Header.Get("X-Request-Id")})
 	}))
 
 	return m
