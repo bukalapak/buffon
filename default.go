@@ -22,21 +22,29 @@ var (
 	errMissedQuery      = errors.New("Must provide aggregate query")
 )
 
-type DefaultExecutor struct {
+type DefaultOption struct {
 	Transport http.RoundTripper
+}
 
+type DefaultExecutor struct {
+	option   *DefaultOption
 	builder  *defaultBuilder
 	fetcher  *defaultFetcher
 	finisher *defaultFinisher
 }
 
-func NewDefaultExecutor(s string) (Executor, error) {
+func NewDefaultExecutor(s string, opt *DefaultOption) (*DefaultExecutor, error) {
 	v, err := newDefaultBuilder(s)
 	if err != nil {
 		return nil, err
 	}
 
+	if opt == nil {
+		opt = &DefaultOption{}
+	}
+
 	return &DefaultExecutor{
+		option:   opt,
 		builder:  v,
 		fetcher:  &defaultFetcher{},
 		finisher: &defaultFinisher{},
@@ -60,11 +68,11 @@ func (c *DefaultExecutor) FinishErr(w http.ResponseWriter, code int, err error) 
 }
 
 func (c *DefaultExecutor) httpTransport() http.RoundTripper {
-	if c.Transport == nil {
+	if c.option.Transport == nil {
 		return http.DefaultTransport
 	}
 
-	return c.Transport
+	return c.option.Transport
 }
 
 type request struct {

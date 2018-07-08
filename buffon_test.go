@@ -26,7 +26,7 @@ func TestAggregator(t *testing.T) {
 	defer backend.Close()
 
 	t.Run("queries", func(t *testing.T) {
-		exc, err := buffon.NewDefaultExecutor(backend.URL)
+		exc, err := buffon.NewDefaultExecutor(backend.URL, nil)
 		assert.Nil(t, err)
 
 		agg := buffon.NewAggregator(exc)
@@ -60,10 +60,12 @@ func TestAggregator(t *testing.T) {
 	})
 
 	t.Run("fetch-failure", func(t *testing.T) {
-		exc, err := buffon.NewDefaultExecutor(backend.URL)
-		assert.Nil(t, err)
+		opt := &buffon.DefaultOption{
+			Transport: &FailureTransport{},
+		}
 
-		exc.(*buffon.DefaultExecutor).Transport = &FailureTransport{}
+		exc, err := buffon.NewDefaultExecutor(backend.URL, opt)
+		assert.Nil(t, err)
 
 		agg := buffon.NewAggregator(exc)
 
@@ -79,10 +81,12 @@ func TestAggregator(t *testing.T) {
 	})
 
 	t.Run("fetch-failure-response-body", func(t *testing.T) {
-		exc, err := buffon.NewDefaultExecutor(backend.URL)
-		assert.Nil(t, err)
+		opt := &buffon.DefaultOption{
+			Transport: &FailureBodyTransport{},
+		}
 
-		exc.(*buffon.DefaultExecutor).Transport = &FailureBodyTransport{}
+		exc, err := buffon.NewDefaultExecutor(backend.URL, opt)
+		assert.Nil(t, err)
 
 		agg := buffon.NewAggregator(exc)
 
