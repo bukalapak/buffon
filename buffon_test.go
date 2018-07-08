@@ -26,7 +26,11 @@ func TestAggregator(t *testing.T) {
 	defer backend.Close()
 
 	t.Run("queries", func(t *testing.T) {
-		exc, err := buffon.NewDefaultExecutor(backend.URL, nil)
+		opt := &buffon.DefaultOption{
+			Timeout: time.Duration(1) * time.Second,
+		}
+
+		exc, err := buffon.NewDefaultExecutor(backend.URL, opt)
 		assert.Nil(t, err)
 
 		agg := buffon.NewAggregator(exc)
@@ -147,6 +151,10 @@ func handler() http.Handler {
 
 	m.Get("/timeout", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(500 * time.Millisecond)
+	}))
+
+	m.Get("/timeout-config", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, `{"data":{"timeout":"`+r.Header.Get("X-Timeout")+`"},"meta":{"http_status":200}}`)
 	}))
 
 	m.Get("/query", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

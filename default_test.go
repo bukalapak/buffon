@@ -11,7 +11,8 @@ import (
 
 func TestDefaultExecutor(t *testing.T) {
 	t.Run("invalid-backend", func(t *testing.T) {
-		exc, err := buffon.NewDefaultExecutor("http:// invalid", nil)
+		opt := &buffon.DefaultOption{}
+		exc, err := buffon.NewDefaultExecutor("http:// invalid", opt)
 		assert.NotNil(t, err)
 		assert.Nil(t, exc)
 	})

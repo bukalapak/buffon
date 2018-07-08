@@ -24,6 +24,7 @@ var (
 
 type DefaultOption struct {
 	Transport http.RoundTripper
+	Timeout   time.Duration
 }
 
 type DefaultExecutor struct {
@@ -34,13 +35,9 @@ type DefaultExecutor struct {
 }
 
 func NewDefaultExecutor(s string, opt *DefaultOption) (*DefaultExecutor, error) {
-	v, err := newDefaultBuilder(s)
+	v, err := newDefaultBuilder(s, opt.Timeout)
 	if err != nil {
 		return nil, err
-	}
-
-	if opt == nil {
-		opt = &DefaultOption{}
 	}
 
 	return &DefaultExecutor{
@@ -96,16 +93,20 @@ func (p payload) Bytes() []byte {
 }
 
 type defaultBuilder struct {
-	BaseURL *url.URL
+	BaseURL        *url.URL
+	DefaultTimeout time.Duration
 }
 
-func newDefaultBuilder(baseURL string) (*defaultBuilder, error) {
+func newDefaultBuilder(baseURL string, n time.Duration) (*defaultBuilder, error) {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, err
 	}
 
-	return &defaultBuilder{BaseURL: u}, nil
+	return &defaultBuilder{
+		BaseURL:        u,
+		DefaultTimeout: n,
+	}, nil
 }
 
 func (x *defaultBuilder) Build(r *http.Request) (map[string]*http.Request, error) {
@@ -119,17 +120,30 @@ func (x *defaultBuilder) Build(r *http.Request) (map[string]*http.Request, error
 	mr := make(map[string]*http.Request)
 
 	for k, v := range v.Aggregate {
-		dur := time.Duration(v.Timeout) * time.Millisecond
 		req := x.cloneRequest(r, v)
 		req.URL.Scheme = x.BaseURL.Scheme
 		req.URL.Host = x.BaseURL.Host
 		req.Host = x.BaseURL.Host
-		req.Header.Set("X-Timeout", dur.String())
+		req.Header.Set("X-Timeout", x.Timeout(v).String())
 
 		mr[k] = req
 	}
 
 	return mr, nil
+}
+
+func (x *defaultBuilder) Timeout(p payload) time.Duration {
+	if p.Timeout == 0 {
+		return x.DefaultTimeout
+	}
+
+	n := time.Duration(p.Timeout) * time.Millisecond
+
+	if n > x.DefaultTimeout {
+		return x.DefaultTimeout
+	}
+
+	return n
 }
 
 func (x *defaultBuilder) httpMethod(t payload) string {
