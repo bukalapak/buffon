@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -26,8 +27,10 @@ func TestAggregator(t *testing.T) {
 	defer backend.Close()
 
 	t.Run("queries", func(t *testing.T) {
+		mtr := NewMetric()
 		opt := &buffon.DefaultOption{
-			Timeout: time.Duration(1) * time.Second,
+			Timeout:        time.Duration(1) * time.Second,
+			BackendLatency: mtr.BackendLatency,
 		}
 
 		exc, err := buffon.NewDefaultExecutor(backend.URL, opt)
@@ -62,11 +65,17 @@ func TestAggregator(t *testing.T) {
 				assert.JSONEq(t, string(expected), w.Body.String())
 			})
 		}
+
+		for k, v := range mtr.Data {
+			assert.NotEmpty(t, k)
+			assert.NotZero(t, v.Duration)
+		}
 	})
 
 	t.Run("fetch-failure", func(t *testing.T) {
 		opt := &buffon.DefaultOption{
-			Transport: &FailureTransport{},
+			Transport:      &FailureTransport{},
+			BackendLatency: NoopBackendLatency,
 		}
 
 		exc, err := buffon.NewDefaultExecutor(backend.URL, opt)
@@ -87,7 +96,8 @@ func TestAggregator(t *testing.T) {
 
 	t.Run("fetch-failure-response-body", func(t *testing.T) {
 		opt := &buffon.DefaultOption{
-			Transport: &FailureBodyTransport{},
+			Transport:      &FailureBodyTransport{},
+			BackendLatency: NoopBackendLatency,
 		}
 
 		exc, err := buffon.NewDefaultExecutor(backend.URL, opt)
@@ -192,7 +202,16 @@ func handler() http.Handler {
 		writeData(w, map[string]string{"x-request-id": r.Header.Get("X-Request-Id")})
 	}))
 
-	return m
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		routePattern := r.URL.Path
+
+		if strings.HasPrefix(r.URL.Path, "/users") {
+			routePattern = "/users/:id"
+		}
+
+		w.Header().Set("X-Route-Pattern", routePattern)
+		m.ServeHTTP(w, r)
+	})
 }
 
 func parseBody(r io.Reader) (map[string]string, error) {
@@ -252,4 +271,35 @@ func (t *FailureBodyTransport) RoundTrip(r *http.Request) (*http.Response, error
 
 func (t *FailureBodyTransport) Read(b []byte) (n int, err error) {
 	return 0, errors.New("Unable to read response body")
+}
+
+func NoopBackendLatency(n time.Duration, method, routePattern string, code int) {}
+
+type MetricData struct {
+	Duration   time.Duration
+	Method     string
+	StatusCode int
+}
+
+type Metric struct {
+	mu   *sync.Mutex
+	Data map[string]MetricData
+}
+
+func NewMetric() *Metric {
+	return &Metric{
+		mu:   &sync.Mutex{},
+		Data: make(map[string]MetricData),
+	}
+}
+
+func (m *Metric) BackendLatency(n time.Duration, method, routePattern string, code int) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.Data[routePattern] = MetricData{
+		Duration:   n,
+		Method:     method,
+		StatusCode: code,
+	}
 }

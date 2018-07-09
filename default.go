@@ -23,8 +23,9 @@ var (
 )
 
 type DefaultOption struct {
-	Transport http.RoundTripper
-	Timeout   time.Duration
+	Transport      http.RoundTripper
+	Timeout        time.Duration
+	BackendLatency func(n time.Duration, method, routePattern string, statusCode int)
 }
 
 type DefaultExecutor struct {
@@ -43,7 +44,7 @@ func NewDefaultExecutor(s string, opt *DefaultOption) (*DefaultExecutor, error) 
 	return &DefaultExecutor{
 		option:   opt,
 		builder:  v,
-		fetcher:  &defaultFetcher{},
+		fetcher:  &defaultFetcher{BackendLatency: opt.BackendLatency},
 		finisher: &defaultFinisher{},
 	}, nil
 }
@@ -202,7 +203,9 @@ func (mrr ErrorMulti) Error() string {
 	return strings.Join(ss, ",")
 }
 
-type defaultFetcher struct{}
+type defaultFetcher struct {
+	BackendLatency func(n time.Duration, method, routePattern string, statusCode int)
+}
 
 func (x *defaultFetcher) Fetch(mr map[string]*http.Request, z http.RoundTripper) (map[string]*http.Response, error) {
 	var wg sync.WaitGroup
@@ -215,9 +218,11 @@ func (x *defaultFetcher) Fetch(mr map[string]*http.Request, z http.RoundTripper)
 
 	for k, v := range mr {
 		go func(s string, r *http.Request) {
+			start := time.Now()
 			res, err := x.fetch(r, z)
 
 			mu.Lock()
+			x.fetchLatency(start, r, res)
 
 			if err != nil {
 				es[s] = x.buildError(r, err)
@@ -233,6 +238,21 @@ func (x *defaultFetcher) Fetch(mr map[string]*http.Request, z http.RoundTripper)
 	wg.Wait()
 
 	return ms, es
+}
+
+func (x *defaultFetcher) fetchLatency(start time.Time, r *http.Request, res *http.Response) {
+	var statusCode int
+	var routePattern string
+
+	if res != nil {
+		statusCode = res.StatusCode
+		routePattern = res.Header.Get("X-Route-Pattern")
+	} else {
+		statusCode = http.StatusBadGateway
+		routePattern = r.URL.Path
+	}
+
+	x.BackendLatency(time.Since(start), r.Method, routePattern, statusCode)
 }
 
 func (x *defaultFetcher) fetch(r *http.Request, z http.RoundTripper) (*http.Response, error) {
