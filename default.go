@@ -26,6 +26,7 @@ type DefaultOption struct {
 	Transport    http.RoundTripper
 	Timeout      time.Duration
 	FetchLatency func(n time.Duration, method, routePattern string, statusCode int)
+	FetchLogger  func(n time.Duration, method, urlPath string, statusCode int, reqID string)
 }
 
 type DefaultExecutor struct {
@@ -42,9 +43,12 @@ func NewDefaultExecutor(s string, opt *DefaultOption) (*DefaultExecutor, error) 
 	}
 
 	return &DefaultExecutor{
-		option:   opt,
-		builder:  v,
-		fetcher:  &defaultFetcher{FetchLatency: opt.FetchLatency},
+		option:  opt,
+		builder: v,
+		fetcher: &defaultFetcher{
+			FetchLatency: opt.FetchLatency,
+			FetchLogger:  opt.FetchLogger,
+		},
 		finisher: &defaultFinisher{},
 	}, nil
 }
@@ -205,6 +209,7 @@ func (mrr ErrorMulti) Error() string {
 
 type defaultFetcher struct {
 	FetchLatency func(n time.Duration, method, routePattern string, statusCode int)
+	FetchLogger  func(n time.Duration, method, urlPath string, statusCode int, reqID string)
 }
 
 func (x *defaultFetcher) Fetch(mr map[string]*http.Request, z http.RoundTripper) (map[string]*http.Response, error) {
@@ -222,7 +227,10 @@ func (x *defaultFetcher) Fetch(mr map[string]*http.Request, z http.RoundTripper)
 			res, err := x.fetch(r, z)
 
 			mu.Lock()
-			x.fetchLatency(start, r, res)
+
+			dur := time.Since(start)
+			x.fetchLatency(dur, r, res)
+			x.fetchLogger(dur, r, res)
 
 			if err != nil {
 				es[s] = x.buildError(r, err)
@@ -240,19 +248,28 @@ func (x *defaultFetcher) Fetch(mr map[string]*http.Request, z http.RoundTripper)
 	return ms, es
 }
 
-func (x *defaultFetcher) fetchLatency(start time.Time, r *http.Request, res *http.Response) {
-	var statusCode int
-	var routePattern string
+func (x *defaultFetcher) fetchLatency(n time.Duration, r *http.Request, res *http.Response) {
+	x.FetchLatency(n, r.Method, x.routePattern(r, res), x.statusCode(r, res))
+}
 
+func (x *defaultFetcher) fetchLogger(n time.Duration, r *http.Request, res *http.Response) {
+	x.FetchLogger(n, r.Method, r.URL.Path, x.statusCode(r, res), r.Header.Get("X-Request-Id"))
+}
+
+func (x *defaultFetcher) statusCode(r *http.Request, res *http.Response) int {
 	if res != nil {
-		statusCode = res.StatusCode
-		routePattern = res.Header.Get("X-Route-Pattern")
-	} else {
-		statusCode = http.StatusBadGateway
-		routePattern = r.URL.Path
+		return res.StatusCode
 	}
 
-	x.FetchLatency(time.Since(start), r.Method, routePattern, statusCode)
+	return http.StatusBadGateway
+}
+
+func (x *defaultFetcher) routePattern(r *http.Request, res *http.Response) string {
+	if res != nil {
+		return res.Header.Get("X-Route-Pattern")
+	}
+
+	return r.URL.Path
 }
 
 func (x *defaultFetcher) fetch(r *http.Request, z http.RoundTripper) (*http.Response, error) {
