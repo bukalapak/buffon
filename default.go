@@ -23,9 +23,9 @@ var (
 )
 
 type DefaultOption struct {
-	Transport      http.RoundTripper
-	Timeout        time.Duration
-	BackendLatency func(n time.Duration, method, routePattern string, statusCode int)
+	Transport    http.RoundTripper
+	Timeout      time.Duration
+	FetchLatency func(n time.Duration, method, routePattern string, statusCode int)
 }
 
 type DefaultExecutor struct {
@@ -44,7 +44,7 @@ func NewDefaultExecutor(s string, opt *DefaultOption) (*DefaultExecutor, error) 
 	return &DefaultExecutor{
 		option:   opt,
 		builder:  v,
-		fetcher:  &defaultFetcher{BackendLatency: opt.BackendLatency},
+		fetcher:  &defaultFetcher{FetchLatency: opt.FetchLatency},
 		finisher: &defaultFinisher{},
 	}, nil
 }
@@ -204,7 +204,7 @@ func (mrr ErrorMulti) Error() string {
 }
 
 type defaultFetcher struct {
-	BackendLatency func(n time.Duration, method, routePattern string, statusCode int)
+	FetchLatency func(n time.Duration, method, routePattern string, statusCode int)
 }
 
 func (x *defaultFetcher) Fetch(mr map[string]*http.Request, z http.RoundTripper) (map[string]*http.Response, error) {
@@ -252,7 +252,7 @@ func (x *defaultFetcher) fetchLatency(start time.Time, r *http.Request, res *htt
 		routePattern = r.URL.Path
 	}
 
-	x.BackendLatency(time.Since(start), r.Method, routePattern, statusCode)
+	x.FetchLatency(time.Since(start), r.Method, routePattern, statusCode)
 }
 
 func (x *defaultFetcher) fetch(r *http.Request, z http.RoundTripper) (*http.Response, error) {

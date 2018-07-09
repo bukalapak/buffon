@@ -29,8 +29,8 @@ func TestAggregator(t *testing.T) {
 	t.Run("queries", func(t *testing.T) {
 		mtr := NewMetric()
 		opt := &buffon.DefaultOption{
-			Timeout:        time.Duration(1) * time.Second,
-			BackendLatency: mtr.BackendLatency,
+			Timeout:      time.Duration(1) * time.Second,
+			FetchLatency: mtr.FetchLatency,
 		}
 
 		exc, err := buffon.NewDefaultExecutor(backend.URL, opt)
@@ -74,8 +74,8 @@ func TestAggregator(t *testing.T) {
 
 	t.Run("fetch-failure", func(t *testing.T) {
 		opt := &buffon.DefaultOption{
-			Transport:      &FailureTransport{},
-			BackendLatency: NoopBackendLatency,
+			Transport:    &FailureTransport{},
+			FetchLatency: NoopFetchLatency,
 		}
 
 		exc, err := buffon.NewDefaultExecutor(backend.URL, opt)
@@ -96,8 +96,8 @@ func TestAggregator(t *testing.T) {
 
 	t.Run("fetch-failure-response-body", func(t *testing.T) {
 		opt := &buffon.DefaultOption{
-			Transport:      &FailureBodyTransport{},
-			BackendLatency: NoopBackendLatency,
+			Transport:    &FailureBodyTransport{},
+			FetchLatency: NoopFetchLatency,
 		}
 
 		exc, err := buffon.NewDefaultExecutor(backend.URL, opt)
@@ -273,7 +273,7 @@ func (t *FailureBodyTransport) Read(b []byte) (n int, err error) {
 	return 0, errors.New("Unable to read response body")
 }
 
-func NoopBackendLatency(n time.Duration, method, routePattern string, code int) {}
+func NoopFetchLatency(n time.Duration, method, routePattern string, code int) {}
 
 type MetricData struct {
 	Duration   time.Duration
@@ -293,7 +293,7 @@ func NewMetric() *Metric {
 	}
 }
 
-func (m *Metric) BackendLatency(n time.Duration, method, routePattern string, code int) {
+func (m *Metric) FetchLatency(n time.Duration, method, routePattern string, code int) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
