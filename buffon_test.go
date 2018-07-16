@@ -63,8 +63,13 @@ func TestAggregator(t *testing.T) {
 				resFile := strings.Replace(match, "queries", "responses", 1)
 				expected, err := ioutil.ReadFile(resFile)
 				assert.Nil(t, err)
-				assert.Equal(t, http.StatusOK, w.Code)
 				assert.JSONEq(t, string(expected), w.Body.String())
+
+				if strings.Contains(match, "invalid") {
+					assert.Equal(t, http.StatusBadRequest, w.Code)
+				} else {
+					assert.Equal(t, http.StatusOK, w.Code)
+				}
 			})
 		}
 

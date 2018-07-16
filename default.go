@@ -377,6 +377,7 @@ func (x *defaultFinisher) Finish(w http.ResponseWriter, ms map[string]*http.Resp
 func (x *defaultFinisher) FinishErr(w http.ResponseWriter, code int, err error) {
 	b := x.finishErr(code, err.Error())
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
 	w.Write(b)
 }
 
