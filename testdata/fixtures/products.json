@@ -1,0 +1,30 @@
+{
+  "data": [
+    {
+      "id": "1",
+      "name": "product1",
+      "url": "https://example.com/p/product1",
+      "price": 20000,
+      "store": {
+        "id": 3,
+        "name": "store3"
+      }
+    },
+    {
+      "id": "2",
+      "name": "product2",
+      "url": "https://example.com/p/product2",
+      "price": 10000,
+      "store": {
+        "id": 4,
+        "name": "store4"
+      }
+    }
+  ],
+  "meta": {
+    "total": 2,
+    "limit": 20,
+    "offset": 0,
+    "http_status": 200
+  }
+}

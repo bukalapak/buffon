@@ -320,7 +320,7 @@ type response struct {
 }
 
 func (r *response) Add(k string, n *json.Node) {
-	data := make(map[string]interface{})
+	data := new(interface{})
 	meta := make(map[string]interface{})
 	errs := []Error{}
 

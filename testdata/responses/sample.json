@@ -32,7 +32,29 @@
     },
     "h1": {
       "x-request-id": "3a772b45-c5a3-4f7f-922e-372f216056c5"
-    }
+    },
+    "p1": [
+      {
+        "id": "1",
+        "name": "product1",
+        "url": "https://example.com/p/product1",
+        "price": 20000,
+        "store": {
+          "id": 3,
+          "name": "store3"
+        }
+      },
+      {
+        "id": "2",
+        "name": "product2",
+        "url": "https://example.com/p/product2",
+        "price": 10000,
+        "store": {
+          "id": 4,
+          "name": "store4"
+        }
+      }
+    ]
   },
   "meta": {
     "u1": { "http_status": 200 },
@@ -49,7 +71,13 @@
     "g1": { "http_status": 200 },
     "g2": { "http_status": 500 },
     "t2": { "http_status": 200 },
-    "h1": { "http_status": 200 }
+    "h1": { "http_status": 200 },
+    "p1": {
+      "total": 2,
+      "limit": 20,
+      "offset": 0,
+      "http_status": 200
+    }
   },
   "error": {
     "x1": [

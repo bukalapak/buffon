@@ -50,6 +50,7 @@ func TestAggregator(t *testing.T) {
 				defer file.Close()
 
 				r := httptest.NewRequest("POST", "http://example.com/aggregate", file)
+				r.Header.Set("Authorization", "Bearer unique")
 				r.Header.Set("X-Real-Ip", "202.212.202.212")
 				r.Header.Set("X-Request-Id", "3a772b45-c5a3-4f7f-922e-372f216056c5")
 				r.Header.Set("User-Agent", "gateway")
@@ -130,6 +131,12 @@ func TestAggregator(t *testing.T) {
 
 func handler() http.Handler {
 	m := pat.New()
+
+	m.Get("/products", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := ioutil.ReadFile("testdata/fixtures/products.json")
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(b)
+	}))
 
 	m.Get("/users/:id", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := ioutil.ReadFile("testdata/fixtures/user.json")
