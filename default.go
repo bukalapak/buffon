@@ -328,7 +328,7 @@ func (r *response) Add(k string, n *json.Node) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if !bytes.Equal(n.Get("data").Bytes(), []byte(`{}`)) {
+	if !n.Get("data").IsEmpty() {
 		if err := n.Get("data").Unmarshal(&data); err == nil {
 			r.Data[k] = data
 		}
