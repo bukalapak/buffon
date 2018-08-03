@@ -15,6 +15,7 @@
     "g1": { "method": "GET", "path": "/gzip" },
     "g2": { "method": "GET", "path": "/gzip-invalid" },
     "h1": { "method": "GET", "path": "/header" },
-    "p1": { "method": "GET", "path": "/products" }
+    "p1": { "method": "GET", "path": "/products" },
+    "m1": { "method": "DELETE", "path": "/subscriptions/123" }
   }
 }

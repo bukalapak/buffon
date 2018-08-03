@@ -170,6 +170,12 @@ func handler() http.Handler {
 		})
 	}))
 
+	m.Del("/subscriptions/123", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := ioutil.ReadFile("testdata/fixtures/message.json")
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(b)
+	}))
+
 	m.Get("/422", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := ioutil.ReadFile("testdata/fixtures/error-422.json")
 		w.WriteHeader(http.StatusUnprocessableEntity)

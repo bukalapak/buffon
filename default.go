@@ -313,10 +313,11 @@ func (x *defaultFetcher) buildError(req *http.Request, err error) error {
 }
 
 type response struct {
-	mu    *sync.Mutex
-	Data  map[string]interface{} `json:"data"`
-	Meta  map[string]interface{} `json:"meta"`
-	Error map[string][]Error     `json:"error"`
+	mu      *sync.Mutex
+	Data    map[string]interface{} `json:"data"`
+	Message map[string]string      `json:"message,omitempty"`
+	Meta    map[string]interface{} `json:"meta"`
+	Error   map[string][]Error     `json:"error"`
 }
 
 func (r *response) Add(k string, n *json.Node) {
@@ -327,8 +328,14 @@ func (r *response) Add(k string, n *json.Node) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if err := n.Get("data").Unmarshal(&data); err == nil {
-		r.Data[k] = data
+	if !bytes.Equal(n.Get("data").Bytes(), []byte(`{}`)) {
+		if err := n.Get("data").Unmarshal(&data); err == nil {
+			r.Data[k] = data
+		}
+	}
+
+	if msg := n.Get("message").String(); msg != "" {
+		r.Message[k] = msg
 	}
 
 	if err := n.Get("meta").Unmarshal(&meta); err == nil {
@@ -359,10 +366,11 @@ func (r *response) addStatus(k string, code int) {
 
 func newResponse() *response {
 	return &response{
-		Data:  make(map[string]interface{}),
-		Meta:  make(map[string]interface{}),
-		Error: make(map[string][]Error),
-		mu:    &sync.Mutex{},
+		Data:    make(map[string]interface{}),
+		Message: make(map[string]string),
+		Meta:    make(map[string]interface{}),
+		Error:   make(map[string][]Error),
+		mu:      &sync.Mutex{},
 	}
 }
 

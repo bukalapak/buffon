@@ -56,6 +56,9 @@
       }
     ]
   },
+  "message" : {
+    "m1" : "You are now unsubscribed"
+  },
   "meta": {
     "u1": { "http_status": 200 },
     "u2": { "http_status": 200 },
@@ -77,7 +80,8 @@
       "limit": 20,
       "offset": 0,
       "http_status": 200
-    }
+    },
+    "m1": { "http_status": 200 }
   },
   "error": {
     "x1": [
