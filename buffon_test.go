@@ -131,6 +131,10 @@ func TestAggregator(t *testing.T) {
 func handler() http.Handler {
 	m := pat.New()
 
+	m.Get("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+	}))
+
 	m.Get("/products", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := ioutil.ReadFile("testdata/fixtures/products.json")
 		w.Header().Set("Content-Type", "application/json")

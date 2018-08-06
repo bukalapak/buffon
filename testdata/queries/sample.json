@@ -9,6 +9,7 @@
     "t2": { "method": "GET", "path": "/timeout-config", "timeout": 2000 },
     "o1": { "method": "GET", "path": "http://example.com/malicious" },
     "o2": { "method": "GET", "path": "http://172.88.87.86/private" },
+    "o3": { "method": "GET", "path": "http://www.example.com" },
     "q1": { "method": "GET", "path": "/query?foo=bar" },
     "c1": { "method": "GET", "path": "/text" },
     "c2": { "method": "GET", "path": "/xml" },

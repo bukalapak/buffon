@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -164,8 +165,18 @@ func (x *defaultBuilder) cloneRequest(r *http.Request, t payload) *http.Request 
 	req.RequestURI = ""
 	req.Method = x.httpMethod(t)
 
-	u, _ := url.Parse(t.Path)
-	req.URL = u
+	if u, err := url.Parse(t.Path); err == nil {
+		if u.Path == "" {
+			u.Path = "/"
+		}
+
+		req.URL = u
+
+		if req.URL.Host != "" {
+			req.Header.Set("X-Invalid", "true")
+			return req
+		}
+	}
 
 	for k := range req.Header {
 		if strings.HasSuffix(k, "-Original") {
@@ -265,14 +276,22 @@ func (x *defaultFetcher) statusCode(r *http.Request, res *http.Response) int {
 }
 
 func (x *defaultFetcher) routePattern(r *http.Request, res *http.Response) string {
+	pattern := r.URL.Path
+
 	if res != nil {
-		return res.Header.Get("X-Route-Pattern")
+		if s := res.Header.Get("X-Route-Pattern"); s != "" {
+			pattern = s
+		}
 	}
 
-	return r.URL.Path
+	return pattern
 }
 
 func (x *defaultFetcher) fetch(r *http.Request, z http.RoundTripper) (*http.Response, error) {
+	if r.Header.Get("X-Invalid") != "" {
+		return x.localResponse(r)
+	}
+
 	var t time.Duration
 
 	if n, err := time.ParseDuration(r.Header.Get("X-Timeout")); err == nil {
@@ -285,6 +304,22 @@ func (x *defaultFetcher) fetch(r *http.Request, z http.RoundTripper) (*http.Resp
 	}
 
 	return htc.Do(r)
+}
+
+func (x *defaultFetcher) localResponse(r *http.Request) (*http.Response, error) {
+	body := x.buildError(r, errors.New("Not Found")).Error()
+
+	return &http.Response{
+		Proto:         "HTTP/1.1",
+		ProtoMajor:    1,
+		ProtoMinor:    1,
+		Status:        fmt.Sprintf("%03d %s", http.StatusNotFound, http.StatusText(http.StatusNotFound)),
+		StatusCode:    http.StatusNotFound,
+		Request:       r,
+		Header:        make(http.Header, 0),
+		Body:          ioutil.NopCloser(strings.NewReader(body)),
+		ContentLength: int64(len(body)),
+	}, nil
 }
 
 func (x *defaultFetcher) buildError(req *http.Request, err error) error {

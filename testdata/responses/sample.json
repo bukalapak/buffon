@@ -68,6 +68,7 @@
     "t1": { "http_status": 502 },
     "o1": { "http_status": 404 },
     "o2": { "http_status": 404 },
+    "o3": { "http_status": 404 },
     "q1": { "http_status": 200 },
     "c1": { "http_status": 415 },
     "c2": { "http_status": 415 },
@@ -112,6 +113,12 @@
       {
         "code": 10000,
         "message": "GET /private: 404 Not Found"
+      }
+    ],
+    "o3": [
+      {
+        "code": 10000,
+        "message": "GET /: 404 Not Found"
       }
     ],
     "c1": [
