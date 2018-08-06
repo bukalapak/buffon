@@ -165,17 +165,22 @@ func (x *defaultBuilder) cloneRequest(r *http.Request, t payload) *http.Request 
 	req.RequestURI = ""
 	req.Method = x.httpMethod(t)
 
-	if u, err := url.Parse(t.Path); err == nil {
-		if u.Path == "" {
-			u.Path = "/"
-		}
+	u, err := url.Parse(t.Path)
+	if err != nil {
+		req.URL.Path = t.Path
+		req.Header.Set("X-Invalid", "true")
+		return req
+	}
 
-		req.URL = u
+	if u.Path == "" {
+		u.Path = "/"
+	}
 
-		if req.URL.Host != "" {
-			req.Header.Set("X-Invalid", "true")
-			return req
-		}
+	req.URL = u
+
+	if req.URL.Host != "" {
+		req.Header.Set("X-Invalid", "true")
+		return req
 	}
 
 	for k := range req.Header {
