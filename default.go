@@ -265,7 +265,7 @@ func (x *defaultFetcher) Fetch(mr map[string]*http.Request, z http.RoundTripper)
 }
 
 func (x *defaultFetcher) fetchLatency(n time.Duration, r *http.Request, res *http.Response) {
-	x.FetchLatency(n, r.Method, x.routePattern(r, res), x.statusCode(r, res))
+	x.FetchLatency(n, r.Method, x.routePattern(res), x.statusCode(r, res))
 }
 
 func (x *defaultFetcher) fetchLogger(n time.Duration, r *http.Request, res *http.Response) {
@@ -280,16 +280,12 @@ func (x *defaultFetcher) statusCode(r *http.Request, res *http.Response) int {
 	return http.StatusBadGateway
 }
 
-func (x *defaultFetcher) routePattern(r *http.Request, res *http.Response) string {
-	pattern := r.URL.Path
-
+func (x *defaultFetcher) routePattern(res *http.Response) string {
 	if res != nil {
-		if s := res.Header.Get("X-Route-Pattern"); s != "" {
-			pattern = s
-		}
+		return res.Header.Get("X-Route-Pattern")
 	}
 
-	return pattern
+	return ""
 }
 
 func (x *defaultFetcher) fetch(r *http.Request, z http.RoundTripper) (*http.Response, error) {
@@ -321,7 +317,7 @@ func (x *defaultFetcher) localResponse(r *http.Request) (*http.Response, error) 
 		Status:        fmt.Sprintf("%03d %s", http.StatusNotFound, http.StatusText(http.StatusNotFound)),
 		StatusCode:    http.StatusNotFound,
 		Request:       r,
-		Header:        make(http.Header, 0),
+		Header:        make(http.Header),
 		Body:          ioutil.NopCloser(strings.NewReader(body)),
 		ContentLength: int64(len(body)),
 	}, nil

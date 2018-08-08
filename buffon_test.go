@@ -73,8 +73,7 @@ func TestAggregator(t *testing.T) {
 			})
 		}
 
-		for k, v := range mtr.Data {
-			assert.NotEmpty(t, k)
+		for _, v := range mtr.Data {
 			assert.NotZero(t, v.Duration)
 		}
 
