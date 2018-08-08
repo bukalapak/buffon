@@ -127,6 +127,12 @@ func TestAggregator(t *testing.T) {
 	})
 }
 
+func writeFromFixture(w http.ResponseWriter, name string) {
+	b, _ := ioutil.ReadFile("testdata/fixtures/" + name)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(b)
+}
+
 func handler() http.Handler {
 	m := pat.New()
 
@@ -135,15 +141,11 @@ func handler() http.Handler {
 	}))
 
 	m.Get("/products", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		b, _ := ioutil.ReadFile("testdata/fixtures/products.json")
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(b)
+		writeFromFixture(w, "products.json")
 	}))
 
 	m.Get("/users/:id", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		b, _ := ioutil.ReadFile("testdata/fixtures/user.json")
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(b)
+		writeFromFixture(w, "user.json")
 	}))
 
 	m.Patch("/users/:id", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -174,16 +176,12 @@ func handler() http.Handler {
 	}))
 
 	m.Del("/subscriptions/123", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		b, _ := ioutil.ReadFile("testdata/fixtures/message.json")
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(b)
+		writeFromFixture(w, "message.json")
 	}))
 
 	m.Get("/422", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		b, _ := ioutil.ReadFile("testdata/fixtures/error-422.json")
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(b)
+		writeFromFixture(w, "error-422.json")
 	}))
 
 	m.Get("/timeout", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
