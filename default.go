@@ -364,10 +364,8 @@ func (r *response) Add(k string, n *json.Node) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if !n.Get("data").IsEmpty() {
-		if err := n.Get("data").Unmarshal(&data); err == nil {
-			r.Data[k] = data
-		}
+	if err := n.Get("data").Unmarshal(&data); err == nil {
+		r.Data[k] = data
 	}
 
 	if msg := n.Get("message").String(); msg != "" {

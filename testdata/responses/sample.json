@@ -54,7 +54,9 @@
           "name": "store4"
         }
       }
-    ]
+    ],
+    "m1": {},
+    "a1": []
   },
   "message" : {
     "m1" : "You are now unsubscribed"
@@ -83,7 +85,8 @@
       "offset": 0,
       "http_status": 200
     },
-    "m1": { "http_status": 200 }
+    "m1": { "http_status": 200 },
+    "a1": { "http_status": 200 }
   },
   "error": {
     "x1": [

@@ -184,6 +184,10 @@ func handler() http.Handler {
 		writeFromFixture(w, "error-422.json")
 	}))
 
+	m.Get("/empty-array", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		writeFromFixture(w, "empty-array.json")
+	}))
+
 	m.Get("/timeout", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(500 * time.Millisecond)
 	}))
