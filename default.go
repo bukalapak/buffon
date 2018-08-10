@@ -176,7 +176,18 @@ func (x *defaultBuilder) cloneRequest(r *http.Request, t payload) *http.Request 
 		u.Path = "/"
 	}
 
+	q := make(url.Values)
+
+	for k, v := range req.URL.Query() {
+		q[k] = v
+	}
+
+	for k, v := range u.Query() {
+		q[k] = v
+	}
+
 	req.URL = u
+	req.URL.RawQuery = q.Encode()
 
 	if req.URL.Host != "" {
 		req.Header.Set("X-Invalid", "true")

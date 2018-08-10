@@ -49,7 +49,7 @@ func TestAggregator(t *testing.T) {
 				assert.Nil(t, err)
 				defer file.Close()
 
-				r := httptest.NewRequest("POST", "http://example.com/aggregate", file)
+				r := httptest.NewRequest("POST", "http://example.com/aggregate?baz=boo", file)
 				r.Header.Set("X-Real-Ip", "202.212.202.212")
 				r.Header.Set("X-Request-Id", "3a772b45-c5a3-4f7f-922e-372f216056c5")
 				r.Header.Set("User-Agent", "gateway")
