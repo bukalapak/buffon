@@ -22,7 +22,7 @@
       "ip": "202.212.202.212"
     },
     "q1": {
-      "url": "/query?baz=boo&foo=bar"
+      "url": "/query?baz=boo&foo=bar&from=payload"
     },
     "g1": {
       "hello": "gzip!"
