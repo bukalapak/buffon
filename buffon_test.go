@@ -31,6 +31,7 @@ func TestAggregator(t *testing.T) {
 		log := NewLogger()
 		opt := &buffon.DefaultOption{
 			Timeout:      time.Duration(1) * time.Second,
+			MaxTimeout:   time.Duration(1) * time.Second,
 			FetchLatency: mtr.FetchLatency,
 			FetchLogger:  log.FetchLogger,
 		}

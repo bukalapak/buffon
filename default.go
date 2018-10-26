@@ -26,6 +26,7 @@ var (
 type DefaultOption struct {
 	Transport    http.RoundTripper
 	Timeout      time.Duration
+	MaxTimeout   time.Duration
 	FetchLatency func(n time.Duration, method, routePattern string, statusCode int)
 	FetchLogger  func(n time.Duration, method, urlPath string, statusCode int, reqID string)
 }
@@ -38,7 +39,7 @@ type DefaultExecutor struct {
 }
 
 func NewDefaultExecutor(s string, opt *DefaultOption) (*DefaultExecutor, error) {
-	v, err := newDefaultBuilder(s, opt.Timeout)
+	v, err := newDefaultBuilder(s, opt.Timeout, opt.MaxTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -101,9 +102,10 @@ func (p payload) Bytes() []byte {
 type defaultBuilder struct {
 	BaseURL        *url.URL
 	DefaultTimeout time.Duration
+	MaxTimeout     time.Duration
 }
 
-func newDefaultBuilder(baseURL string, n time.Duration) (*defaultBuilder, error) {
+func newDefaultBuilder(baseURL string, n time.Duration, m time.Duration) (*defaultBuilder, error) {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, err
@@ -112,6 +114,7 @@ func newDefaultBuilder(baseURL string, n time.Duration) (*defaultBuilder, error)
 	return &defaultBuilder{
 		BaseURL:        u,
 		DefaultTimeout: n,
+		MaxTimeout:     m,
 	}, nil
 }
 
@@ -145,8 +148,8 @@ func (x *defaultBuilder) Timeout(p payload) time.Duration {
 
 	n := time.Duration(p.Timeout) * time.Millisecond
 
-	if n > x.DefaultTimeout {
-		return x.DefaultTimeout
+	if n > x.MaxTimeout {
+		return x.MaxTimeout
 	}
 
 	return n
