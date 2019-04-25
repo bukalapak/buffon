@@ -1,8 +1,10 @@
 language: go
 go:
-  - "1.10"
-install:
-  - go get -t ./...
+  - "1.12.x"
+env:
+  global:
+    - GO111MODULE=on
+install: true
 script:
   - make coverage
 after_success:
