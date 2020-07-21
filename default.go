@@ -21,12 +21,14 @@ import (
 var (
 	errUnsupportedMedia = errors.New(http.StatusText(http.StatusUnsupportedMediaType))
 	errMissedQuery      = errors.New("Must provide aggregate query")
+	errTooMuchRequest   = errors.New("Too much aggregate requests")
 )
 
 type DefaultOption struct {
 	Transport    http.RoundTripper
 	Timeout      time.Duration
 	MaxTimeout   time.Duration
+	MaxRequest   int
 	FetchLatency func(n time.Duration, method, routePattern string, statusCode int)
 	FetchLogger  func(n time.Duration, method, urlPath string, statusCode int, reqID string)
 }
@@ -39,9 +41,16 @@ type DefaultExecutor struct {
 }
 
 func NewDefaultExecutor(s string, opt *DefaultOption) (*DefaultExecutor, error) {
-	v, err := newDefaultBuilder(s, opt.Timeout, opt.MaxTimeout)
+	u, err := url.Parse(s)
 	if err != nil {
 		return nil, err
+	}
+
+	v := &defaultBuilder{
+		BaseURL:        u,
+		DefaultTimeout: opt.Timeout,
+		MaxTimeout:     opt.MaxTimeout,
+		MaxRequest:     opt.MaxRequest,
 	}
 
 	return &DefaultExecutor{
@@ -103,19 +112,7 @@ type defaultBuilder struct {
 	BaseURL        *url.URL
 	DefaultTimeout time.Duration
 	MaxTimeout     time.Duration
-}
-
-func newDefaultBuilder(baseURL string, n time.Duration, m time.Duration) (*defaultBuilder, error) {
-	u, err := url.Parse(baseURL)
-	if err != nil {
-		return nil, err
-	}
-
-	return &defaultBuilder{
-		BaseURL:        u,
-		DefaultTimeout: n,
-		MaxTimeout:     m,
-	}, nil
+	MaxRequest     int
 }
 
 func (x *defaultBuilder) Build(r *http.Request) (map[string]*http.Request, error) {
@@ -124,6 +121,10 @@ func (x *defaultBuilder) Build(r *http.Request) (map[string]*http.Request, error
 	err := json.NewDecoder(r.Body).Decode(v)
 	if err != nil {
 		return nil, errMissedQuery
+	}
+
+	if x.MaxRequest != 0 && len(v.Aggregate) > x.MaxRequest {
+		return nil, errTooMuchRequest
 	}
 
 	mr := make(map[string]*http.Request)
