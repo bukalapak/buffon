@@ -21,7 +21,7 @@ import (
 var (
 	errUnsupportedMedia = errors.New(http.StatusText(http.StatusUnsupportedMediaType))
 	errMissedQuery      = errors.New("Must provide aggregate query")
-	errTooMuchRequest   = errors.New("Too much aggregate requests")
+	errTooManyRequests  = errors.New("Too many aggregate requests")
 )
 
 type DefaultOption struct {
@@ -124,7 +124,7 @@ func (x *defaultBuilder) Build(r *http.Request) (map[string]*http.Request, error
 	}
 
 	if x.MaxRequest != 0 && len(v.Aggregate) > x.MaxRequest {
-		return nil, errTooMuchRequest
+		return nil, errTooManyRequests
 	}
 
 	mr := make(map[string]*http.Request)

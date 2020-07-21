@@ -31,7 +31,7 @@ func TestDefaultExecutor_MaxRequest(t *testing.T) {
 	r := httptest.NewRequest("POST", "http://example.com/aggregate", s)
 
 	m, err := exc.Build(r)
-	assert.Equal(t, "Too much aggregate requests", err.Error())
+	assert.Equal(t, "Too many aggregate requests", err.Error())
 	assert.Nil(t, m)
 }
 
