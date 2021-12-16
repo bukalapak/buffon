@@ -31,6 +31,7 @@ type DefaultOption struct {
 	MaxRequest   int
 	FetchLatency func(n time.Duration, method, routePattern string, statusCode int)
 	FetchLogger  func(n time.Duration, method, urlPath string, statusCode int, reqID string)
+	FetchFilter  func(method, urlPath string) bool
 }
 
 type DefaultExecutor struct {
@@ -59,6 +60,7 @@ func NewDefaultExecutor(s string, opt *DefaultOption) (*DefaultExecutor, error) 
 		fetcher: &defaultFetcher{
 			FetchLatency: opt.FetchLatency,
 			FetchLogger:  opt.FetchLogger,
+			FetchFilter:  opt.FetchFilter,
 		},
 		finisher: &defaultFinisher{},
 	}, nil
@@ -212,6 +214,7 @@ func (x *defaultBuilder) cloneRequest(r *http.Request, t payload) *http.Request 
 type defaultFetcher struct {
 	FetchLatency func(n time.Duration, method, routePattern string, statusCode int)
 	FetchLogger  func(n time.Duration, method, urlPath string, statusCode int, reqID string)
+	FetchFilter  func(method, urlPath string) bool
 }
 
 func (x *defaultFetcher) Fetch(mr map[string]*http.Request, z http.RoundTripper) (map[string]*http.Response, error) {
@@ -225,19 +228,23 @@ func (x *defaultFetcher) Fetch(mr map[string]*http.Request, z http.RoundTripper)
 
 	for k, v := range mr {
 		go func(s string, r *http.Request) {
-			start := time.Now()
-			res, err := x.fetch(r, z)
-
 			mu.Lock()
 
-			dur := time.Since(start)
-			x.fetchLatency(dur, r, res)
-			x.fetchLogger(dur, r, res)
-
-			if err != nil {
-				es[s] = x.buildError(r, err)
+			if x.FetchFilter(r.Method, r.URL.Path) {
+				es[s] = x.buildError(r, fmt.Errorf("Filtered %s %s", r.Method, r.URL.Path), http.StatusBadRequest)
 			} else {
-				ms[s] = res
+				start := time.Now()
+				res, err := x.fetch(r, z)
+
+				dur := time.Since(start)
+				x.fetchLatency(dur, r, res)
+				x.fetchLogger(dur, r, res)
+
+				if err != nil {
+					es[s] = x.buildError(r, err, http.StatusBadGateway)
+				} else {
+					ms[s] = res
+				}
 			}
 
 			mu.Unlock()
@@ -294,7 +301,7 @@ func (x *defaultFetcher) fetch(r *http.Request, z http.RoundTripper) (*http.Resp
 }
 
 func (x *defaultFetcher) localResponse(r *http.Request) (*http.Response, error) {
-	body := x.buildError(r, errors.New("Not Found")).Error()
+	body := x.buildError(r, errors.New("Not Found"), http.StatusNotFound).Error()
 
 	return &http.Response{
 		Proto:         "HTTP/1.1",
@@ -309,9 +316,8 @@ func (x *defaultFetcher) localResponse(r *http.Request) (*http.Response, error) 
 	}, nil
 }
 
-func (x *defaultFetcher) buildError(req *http.Request, err error) error {
+func (x *defaultFetcher) buildError(req *http.Request, err error, statusErrCode int) error {
 	message := err.Error()
-	statusErrCode := http.StatusBadGateway
 
 	var errTimeout bool
 

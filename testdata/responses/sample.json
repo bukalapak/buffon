@@ -56,7 +56,10 @@
       }
     ],
     "m1": {},
-    "a1": []
+    "a1": [],
+    "b2": {
+      "hello": "filter!"
+    }
   },
   "message" : {
     "m1" : "You are now unsubscribed"
@@ -86,7 +89,10 @@
       "http_status": 200
     },
     "m1": { "http_status": 200 },
-    "a1": { "http_status": 200 }
+    "a1": { "http_status": 200 },
+    "b1": { "http_status": 400 },
+    "b2": { "http_status": 200 },
+    "b3": { "http_status": 400 }
   },
   "error": {
     "x1": [
@@ -147,6 +153,18 @@
       {
         "code": 10000,
         "message": "GET /gzip-invalid: gzip: invalid header"
+      }
+    ],
+    "b1": [
+      {
+        "code": 10000,
+        "message": "GET /filtered: Filtered GET /filtered"
+      }
+    ],
+    "b3": [
+      {
+        "code": 10000,
+        "message": "POST /filtered-method: Filtered POST /filtered-method"
       }
     ]
   }

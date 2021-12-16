@@ -29,11 +29,13 @@ func TestAggregator(t *testing.T) {
 	t.Run("queries", func(t *testing.T) {
 		mtr := NewMetric()
 		log := NewLogger()
+		flt := NewFilter()
 		opt := &buffon.DefaultOption{
 			Timeout:      time.Duration(1) * time.Second,
 			MaxTimeout:   time.Duration(1) * time.Second,
 			FetchLatency: mtr.FetchLatency,
 			FetchLogger:  log.FetchLogger,
+			FetchFilter:  flt.FetchFilter,
 		}
 
 		exc, err := buffon.NewDefaultExecutor(backend.URL, opt)
@@ -86,6 +88,7 @@ func TestAggregator(t *testing.T) {
 			Transport:    &FailureTransport{},
 			FetchLatency: NoopFetchLatency,
 			FetchLogger:  NoopFetchLogger,
+			FetchFilter:  NoopFetchFilter,
 		}
 
 		exc, err := buffon.NewDefaultExecutor(backend.URL, opt)
@@ -109,6 +112,7 @@ func TestAggregator(t *testing.T) {
 			Transport:    &FailureBodyTransport{},
 			FetchLatency: NoopFetchLatency,
 			FetchLogger:  NoopFetchLogger,
+			FetchFilter:  NoopFetchFilter,
 		}
 
 		exc, err := buffon.NewDefaultExecutor(backend.URL, opt)
@@ -231,6 +235,11 @@ func handler() http.Handler {
 		writeData(w, map[string]string{"x-request-id": r.Header.Get("X-Request-Id")})
 	}))
 
+	m.Get("/filtered-method", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"data":{"hello":"filter!"},"meta":{"http_status":200}}`)
+	}))
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		routePattern := r.URL.Path
 
@@ -304,6 +313,7 @@ func (t *FailureBodyTransport) Read(b []byte) (n int, err error) {
 
 func NoopFetchLatency(n time.Duration, method, routePattern string, code int)         {}
 func NoopFetchLogger(n time.Duration, method, urlPath string, code int, reqID string) {}
+func NoopFetchFilter(method, urlPath string) bool                                     { return false }
 
 type MetricData struct {
 	Duration   time.Duration
@@ -344,4 +354,25 @@ func NewLogger() *Logger {
 
 func (l *Logger) FetchLogger(n time.Duration, method, urlPath string, statusCode int, reqID string) {
 	l.Buffer.WriteString(fmt.Sprintf("%s %s\t%s %d %s\n", time.Now().Format(time.RFC3339), method, reqID, statusCode, urlPath))
+}
+
+type Filter struct {
+	blockedPaths []string
+}
+
+func NewFilter() *Filter {
+	return &Filter{
+		blockedPaths: []string{"/filtered", "POST|/filtered-method"},
+	}
+}
+
+func (f *Filter) FetchFilter(method, urlPath string) bool {
+
+	for i := range f.blockedPaths {
+		if f.blockedPaths[i] == urlPath || f.blockedPaths[i] == fmt.Sprintf("%s|%s", method, urlPath) {
+			return true
+		}
+	}
+
+	return false
 }

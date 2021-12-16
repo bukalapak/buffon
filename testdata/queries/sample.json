@@ -19,6 +19,9 @@
     "h1": { "method": "GET", "path": "/header" },
     "p1": { "method": "GET", "path": "/products" },
     "m1": { "method": "DELETE", "path": "/subscriptions/123" },
-    "a1": { "method": "GET", "path": "/empty-array" }
+    "a1": { "method": "GET", "path": "/empty-array" },
+    "b1": { "method": "GET", "path": "/filtered" },
+    "b2": { "method": "GET", "path": "/filtered-method" },
+    "b3": { "method": "POST", "path": "/filtered-method" }
   }
 }
